@@ -6,8 +6,8 @@
 
 
 #include "mbed.h"
-#include <iomanip>
-#include <iostream>
+// #include <iomanip>
+// #include <iostream>
 
 #define WINDOW_SIZE 10 // Example window size, adjust as needed
 
@@ -46,8 +46,8 @@ void data_cb() {
 
 
 int main() {
-    std::setw(2);
-    std::setprecision(5);
+    // std::setw(2);
+    // std::setprecision(5);
     //spi initialization
     SPI spi(PF_9, PF_8, PF_7, PC_1, use_gpio_ssel);
     uint8_t write_buf[32], read_buf[32];
@@ -92,7 +92,7 @@ int main() {
     // float avg_gx = 0.0f, avg_gy = 0.0f, avg_gz = 0.0f;
 
     // Example 2: LPF definitions
-    // float filtered_gx = 0.0f, filtered_gy = 0.0f, filtered_gz = 0.0f;
+    float filtered_gx = 0.0f, filtered_gy = 0.0f, filtered_gz = 0.0f;
 
     // Example 3: HPF definitions
     // use with the example 2 definitions
@@ -118,10 +118,14 @@ int main() {
         gy = ((float)raw_gy) * SCALING_FACTOR;
         gz = ((float)raw_gz) * SCALING_FACTOR;
 
+        // printf(">x_axis:%d|g\n",raw_gx);
+        // printf(">y_axis:%d|g\n",raw_gy);
+        // printf(">z_axis:%d|g\n",raw_gz);
+
         //No Filter
         
         printf("RAW -> \t\tgx: %d \t gy: %d \t gz: %d\t\n", raw_gx, raw_gy, raw_gz);
-        std::cout << "x_axis_raw: " << std::setprecision(3) << gx << std::endl;
+        // std::cout << "x_axis_raw: " << std::setprecision(3) << gx << std::endl;
         // std::cout << ">y_axis_raw:" << gy << "|g\n";
         // std::cout << ">z_axis_raw:" << gz << "|g\n";
         // printf(">x_axis_raw:%10.5f |g\n", gx);
@@ -159,15 +163,15 @@ int main() {
 
 
         // Example 2: Apply Simple low-pass filter
-        // filtered_gx = FILTER_COEFFICIENT * gx + (1 - FILTER_COEFFICIENT) * filtered_gx;
-        // filtered_gy = FILTER_COEFFICIENT * gy + (1 - FILTER_COEFFICIENT) * filtered_gy;
-        // filtered_gz = FILTER_COEFFICIENT * gz + (1 - FILTER_COEFFICIENT) * filtered_gz;
+        filtered_gx = FILTER_COEFFICIENT * gx + (1 - FILTER_COEFFICIENT) * filtered_gx;
+        filtered_gy = FILTER_COEFFICIENT * gy + (1 - FILTER_COEFFICIENT) * filtered_gy;
+        filtered_gz = FILTER_COEFFICIENT * gz + (1 - FILTER_COEFFICIENT) * filtered_gz;
 
         // printf("RAW -> \t\tgx: %d \t gy: %d \t gz: %d\t\n", raw_gx, raw_gy, raw_gz);
 
-        // printf(">x_axis_low:%4.5f|g\n", filtered_gx);
-        // printf(">y_axis_low:%4.5f|g\n", filtered_gy);
-        // printf(">z_axis_low:%4.5f|g\n", filtered_gz);
+        printf(">x_axis_low:%g|g\n", filtered_gx);
+        printf(">y_axis_low:%g|g\n", filtered_gy);
+        printf(">z_axis_low:%g|g\n", filtered_gz);
 
         // Example 3: Apply simple high-pass filter with the lpf (by eliminating low freq elements)
         // to be used with example 2 (together)
