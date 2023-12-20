@@ -9,8 +9,6 @@
 // #include <iomanip>
 // #include <iostream>
 
-#define WINDOW_SIZE 10 // Example window size, adjust as needed
-
 // Define Regs & Configurations --> Gyroscope's settings
 #define CTRL_REG1 0x20
 #define CTRL_REG1_CONFIG 0b01'10'1'1'1'1
@@ -29,6 +27,18 @@
 
 #define FILTER_COEFFICIENT 0.1f // Adjust this value as needed
 
+#define SAMPLE_INTERVAL_MS 500 // 0.5 seconds in milliseconds
+#define SAMPLE_COUNT 40        // Number of samples to store
+
+// Structure to hold gyro data
+struct GyroData {
+    float gx, gy, gz;
+};
+
+// Circular buffer for storing gyro data
+GyroData gyroBuffer[SAMPLE_COUNT];
+
+
 // EventFlags object declaration
 EventFlags flags;
 
@@ -43,11 +53,19 @@ void data_cb() {
     flags.set(DATA_READY_FLAG);
 }
 
+int bufferIndex = 0;
+
+// Function to add data to the buffer
+void addDataToBuffer(float gx, float gy, float gz) {
+    gyroBuffer[bufferIndex].gx = gx;
+    gyroBuffer[bufferIndex].gy = gy;
+    gyroBuffer[bufferIndex].gz = gz;
+    bufferIndex = (bufferIndex + 1) % SAMPLE_COUNT;
+}
+
 
 
 int main() {
-    // std::setw(2);
-    // std::setprecision(5);
     //spi initialization
     SPI spi(PF_9, PF_8, PF_7, PC_1, use_gpio_ssel);
     uint8_t write_buf[32], read_buf[32];
@@ -83,21 +101,8 @@ int main() {
         flags.set(DATA_READY_FLAG);
     }
 
-    // Example 1: Moving Average definitions
-    // float window_gx[WINDOW_SIZE] = {0};
-    // float window_gy[WINDOW_SIZE] = {0};
-    // float window_gz[WINDOW_SIZE] = {0};
-    // int window_index = 0;
-
-    // float avg_gx = 0.0f, avg_gy = 0.0f, avg_gz = 0.0f;
-
-    // Example 2: LPF definitions
-    float filtered_gx = 0.0f, filtered_gy = 0.0f, filtered_gz = 0.0f;
-
-    // Example 3: HPF definitions
-    // use with the example 2 definitions
-    // float high_pass_gx = 0.0f, high_pass_gy = 0.0f, high_pass_gz = 0.0f;
-
+    Timer sampleTimer;
+    sampleTimer.start();
 
     while (1) {
         int16_t raw_gx, raw_gy, raw_gz;
@@ -117,6 +122,11 @@ int main() {
         gx = ((float)raw_gx) * SCALING_FACTOR;
         gy = ((float)raw_gy) * SCALING_FACTOR;
         gz = ((float)raw_gz) * SCALING_FACTOR;
+        if (sampleTimer.read_ms() >= SAMPLE_INTERVAL_MS) {
+            // Reset the timer
+            sampleTimer.reset();
+            addDataToBuffer(gx, gy, gz);
+        }
 
         // printf(">x_axis:%d|g\n",raw_gx);
         // printf(">y_axis:%d|g\n",raw_gy);
@@ -124,7 +134,7 @@ int main() {
 
         //No Filter
         
-        printf("RAW -> \t\tgx: %d \t gy: %d \t gz: %d\t\n", raw_gx, raw_gy, raw_gz);
+        // printf("RAW -> \t\tgx: %d \t gy: %d \t gz: %d\t\n", raw_gx, raw_gy, raw_gz);
         // std::cout << "x_axis_raw: " << std::setprecision(3) << gx << std::endl;
         // std::cout << ">y_axis_raw:" << gy << "|g\n";
         // std::cout << ">z_axis_raw:" << gz << "|g\n";
@@ -139,7 +149,7 @@ int main() {
         // window_gy[window_index] = gy;
         // window_gz[window_index] = gz;
 
-        // Compute the moving average
+        // // Compute the moving average
         
         // float avg_gx = 0.0f, avg_gy = 0.0f, avg_gz = 0.0f;
         // for (int i = 0; i < WINDOW_SIZE; i++) {
@@ -151,7 +161,7 @@ int main() {
         // avg_gy /= WINDOW_SIZE;
         // avg_gz /= WINDOW_SIZE;
 
-        // Increment and wrap the window index
+        // // Increment and wrap the window index
 
         // window_index = (window_index + 1) % WINDOW_SIZE;
 
@@ -163,15 +173,25 @@ int main() {
 
 
         // Example 2: Apply Simple low-pass filter
-        filtered_gx = FILTER_COEFFICIENT * gx + (1 - FILTER_COEFFICIENT) * filtered_gx;
-        filtered_gy = FILTER_COEFFICIENT * gy + (1 - FILTER_COEFFICIENT) * filtered_gy;
-        filtered_gz = FILTER_COEFFICIENT * gz + (1 - FILTER_COEFFICIENT) * filtered_gz;
+        // filtered_gx = FILTER_COEFFICIENT * gx + (1 - FILTER_COEFFICIENT) * filtered_gx;
+        // filtered_gy = FILTER_COEFFICIENT * gy + (1 - FILTER_COEFFICIENT) * filtered_gy;
+        // filtered_gz = FILTER_COEFFICIENT * gz + (1 - FILTER_COEFFICIENT) * filtered_gz;
 
         // printf("RAW -> \t\tgx: %d \t gy: %d \t gz: %d\t\n", raw_gx, raw_gy, raw_gz);
 
-        printf(">x_axis_low:%g|g\n", filtered_gx);
-        printf(">y_axis_low:%g|g\n", filtered_gy);
-        printf(">z_axis_low:%g|g\n", filtered_gz);
+        // printf(">x_axis_low:%g|g\n", filtered_gx);
+        // printf(">y_axis_low:%g|g\n", filtered_gy);
+        // printf(">z_axis_low:%g|g\n", filtered_gz);
+
+        float max_value = std::max({std::abs(gx), std::abs(gy), std::abs(gz)});
+
+        if (max_value == std::abs(gx)) {
+            printf("x\n");
+        } else if (max_value == std::abs(gy)) {
+            printf("y\n");
+        } else if (max_value == std::abs(gz)) {
+            printf("z\n");
+        }
 
         // Example 3: Apply simple high-pass filter with the lpf (by eliminating low freq elements)
         // to be used with example 2 (together)
