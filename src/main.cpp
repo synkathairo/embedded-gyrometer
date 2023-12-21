@@ -41,8 +41,7 @@ Timer pressTimer;          // Timer to measure press duration
 
 volatile bool buttonPressed = false;
 volatile int pressDuration = 0;
-uint8_t currentSelection = 0; // 0 for X, 1 for Y, 2 for Z
-bool axisSelected = false;
+int height = 100;
 
 // Structure to hold gyro data
 struct GyroData {
@@ -136,63 +135,12 @@ void onRelease() {
     pressDuration = pressTimer.read_ms();
 }
 
-void updateDisplay() {
-    lcd.Clear(LCD_COLOR_WHITE);
-    lcd.SetBackColor(LCD_COLOR_WHITE);
-    lcd.SetTextColor(LCD_COLOR_BLACK);
-
-    lcd.DisplayStringAt(0, LINE(1), (uint8_t *)"Enter height in feet and inches", CENTER_MODE);
-    lcd.DisplayStringAt(0, LINE(2), (uint8_t *)"select feet", CENTER_MODE);
-    for (int i = 0; i < 11; i++) {
-        if (i == currentSelection) {
-            // Invert colors for the selected item
-            lcd.SetBackColor(LCD_COLOR_BLACK);
-            lcd.SetTextColor(LCD_COLOR_WHITE);
-        } else {
-            lcd.SetBackColor(LCD_COLOR_WHITE);
-            lcd.SetTextColor(LCD_COLOR_BLACK);
-        }
-        uint8_t itemText;
-        switch(i){
-            case 0:
-                itemText = 0;
-                break;
-            case 1:
-                itemText = 1;
-                break;
-            case 2:
-                itemText = 2;
-                break;
-            case 3:
-                itemText = 3;
-                break;
-            case 4:
-                itemText = 4;
-                break;
-            case 5:
-                itemText = 5;
-                break;
-            case 6:
-                itemText = 6;
-                break;
-            case 7:
-                itemText = 7;
-                break;
-            case 8:
-                itemText = 8;
-                break;
-            case 9:
-                itemText = 9;
-                break;
-            case 10:
-                itemText = 10;
-                break;
-            
-        }
-        lcd.DisplayStringAt(0, LINE(3 + i), &itemText, CENTER_MODE);
-    }
+void updateDisplay(int height) {
+    char buffer[64];
+    snprintf(buffer, sizeof(buffer), "height: %d cm", height);
+    // lcd.Clear(LCD_COLOR_WHITE);
+    lcd.DisplayStringAt(0, LINE(1), (uint8_t *)buffer, CENTER_MODE);
 }
-
 
 int main() {
     lcd.Clear(LCD_COLOR_WHITE);
@@ -203,21 +151,20 @@ int main() {
 
     while (true) {
         if (!buttonPressed && pressDuration > 0) {
-            if (pressDuration < 200) { // Quick Press
-                currentSelection = (currentSelection + 1) % 3;
-            } else { // Long Press
-                axisSelected = true;
-                break; // Exit loop as axis is selected
-            } 
-            pressDuration = 0; // Reset duration after handling
+            if (pressDuration < 500) {
+                height += 5;
+            } else if (pressDuration >= 500 && pressDuration < 2000) {
+                height += 10;
+            } else {
+                break;  // Exit the loop if press duration is 2000 ms or more
+            }
+            pressDuration = 0;
+            
         }
+        updateDisplay(height);
 
-        // Update LCD Display with currentSelection highlighted
-        // ...
-        updateDisplay();
         ThisThread::sleep_for(100ms);
     }
-
 
     //spi initialization
     SPI spi(PF_9, PF_8, PF_7, PC_1, use_gpio_ssel);
