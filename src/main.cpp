@@ -1,8 +1,6 @@
 
 #include "mbed.h"
 #include "drivers/LCD_DISCO_F429ZI.h"
-// #include <iomanip>
-// #include <iostream>
 
 // Define Regs & Configurations --> Gyroscope's settings
 #define CTRL_REG1 0x20
@@ -25,14 +23,12 @@
 #define SAMPLE_INTERVAL_MS 500 // 0.5 seconds in milliseconds
 #define SAMPLE_COUNT 40        // Number of samples to store
 
-#define RADIUS 1 // assume the radius (size of a person's leg is 1m, atleast mine is)
-
-#define PERCENTILE 75 // given an array of angular vellocity data, find the PERCENTILEth percentile as a threshold
 #define X 0
 #define Y 1
 #define Z 2
 
-#define MAX_CHANGE_TOLERANCE 0.09f
+#define DEBUG 0
+
 
 LCD_DISCO_F429ZI lcd;  // Instantiate LCD object
 
@@ -76,51 +72,25 @@ void addDataToBuffer(float gx, float gy, float gz) {
     bufferIndex = (bufferIndex + 1) % SAMPLE_COUNT;
 }
 
-float getVelocity(uint8_t axis){
-    if(bufferIndex <= 1){
-        return 0.0f;
+// Function to calculate velocity - Method 1
+float getVelocity(const uint8_t axis, float height){
+    float avgVelocity = 0.0f;
+    if(bufferIndex < 1){
+        return avgVelocity;
     }   
-    float current;
-    float previous;
-    if (axis = X){
-        current = gyroBuffer[bufferIndex].gx;
-        previous = gyroBuffer[bufferIndex - 1].gx;
-    } else if (axis = Y){
-        current = gyroBuffer[bufferIndex].gy;
-        previous = gyroBuffer[bufferIndex - 1].gy;
-    } else if (axis = Z){
-        current = gyroBuffer[bufferIndex].gz;
-        previous = gyroBuffer[bufferIndex - 1].gz;
-    }
-    float velocity = std::abs(current - previous) * RADIUS;
-    return velocity;
+    float legLength = (height * 0.45f)/100; // Assume leg length is 45% of height and convert to meters
+    float prevValue = (axis == X) ? gyroBuffer[bufferIndex-1].gx : (axis == Y) ? gyroBuffer[bufferIndex-1].gy : gyroBuffer[bufferIndex-1].gz;
+    float currentValue = (axis == X) ? gyroBuffer[bufferIndex].gx : (axis == Y) ? gyroBuffer[bufferIndex].gy : gyroBuffer[bufferIndex].gz;
+    avgVelocity = ((prevValue + currentValue) / 2) * legLength;
+    return avgVelocity;
   
 }
 
-float getDistance(float velocity){
+// Function to calculate distance - Method 0
+float getDistance(const float velocity){
     float distance = velocity * SAMPLE_INTERVAL_MS / 1000;
     return distance;
 
-}
-
-// Function to display a message on the LCD
-void lcd_display_message(uint8_t **message, uint8_t numLines)  
-{
-    lcd.Clear(LCD_COLOR_WHITE);  // Clear the LCD screen
-    // Loop through each line of the message
-    for (uint8_t i = 0; i < numLines; i++) {
-        // Display the line at the center of the LCD screen
-        lcd.DisplayStringAt(0, LINE(5 + i), message[i], LEFT_MODE);
-    }
-}
-
-void getMaxValuesFromBuffer(float &maxX, float &maxY, float &maxZ) {
-    maxX = maxY = maxZ = 0.0f;
-    for (int i = 0; i < SAMPLE_COUNT; ++i) {
-        maxX = std::max(maxX, gyroBuffer[i].gx);
-        maxY = std::max(maxY, gyroBuffer[i].gy);
-        maxZ = std::max(maxZ, gyroBuffer[i].gz);
-    }
 }
 
 void onPress() {
@@ -142,6 +112,40 @@ void updateDisplay(int height) {
     lcd.DisplayStringAt(0, LINE(1), (uint8_t *)buffer, CENTER_MODE);
 }
 
+// Function to calculate variance for a given axis
+float calculateVariance(const uint8_t axis) {
+    float sum = 0.0f, sumSquared = 0.0f;
+    for (int i = 0; i < SAMPLE_COUNT; ++i) {
+        float value = (axis == X) ? gyroBuffer[i].gx : (axis == Y) ? gyroBuffer[i].gy : gyroBuffer[i].gz;
+        sum += value;
+        sumSquared += value * value;
+    }
+    float mean = sum / SAMPLE_COUNT;
+    return (sumSquared / SAMPLE_COUNT) - (mean * mean);
+}
+
+// Function to calculate total distance for a given axis
+float calculateTotalDistance(const uint8_t axis, float height) {
+    float totalDistance = 0.0f;
+    float legLength = (height * 0.45f)/100; // Assume leg length is 45% of height and convert to meters
+    float totalAvgVelocity = 0.0f;
+    for (int i = 1; i < bufferIndex; ++i) {
+        float prevValue = (axis == X) ? gyroBuffer[i-1].gx : (axis == Y) ? gyroBuffer[i-1].gy : gyroBuffer[i-1].gz;
+        float currentValue = (axis == X) ? gyroBuffer[i].gx : (axis == Y) ? gyroBuffer[i].gy : gyroBuffer[i].gz;
+        // convert to average linear velocity
+        float avgVelocity = ((prevValue + currentValue) / 2) * legLength;
+        // sum up the average linear velocity
+        totalAvgVelocity += avgVelocity;
+    }
+    // calculate total distance
+    // v = d/t --> d = v * t
+    // t = SAMPLE_INTERVAL_MS * bufferIndex / 1000 
+    // d = (total v / bufferIndex) * (SAMPLE_INTERVAL_MS * bufferIndex / 1000)
+    // d = (total v * SAMPLE_INTERVAL_MS) / 1000 
+    totalDistance = (totalAvgVelocity * SAMPLE_INTERVAL_MS) / 1000;
+    return std::abs(totalDistance);
+}
+
 int main() {
     lcd.Clear(LCD_COLOR_WHITE);
 
@@ -153,19 +157,16 @@ int main() {
     while (true) {
         if (!buttonPressed && pressDuration > 0) {
             if (pressDuration < 500) {
-                height += 5;
+                height += 1;
             } else if (pressDuration >= 500 && pressDuration < 1000) {
                 height += 10;
             } else {
                 break;  // Exit the loop if press duration is 2000 ms or more
             }
             pressDuration = 0;
-            updateDisplay(height);
-            
-        }
-        
-
-        ThisThread::sleep_for(100ms);
+            updateDisplay(height);   
+        }  
+        ThisThread::sleep_for(10ms);
     }
 
     //spi initialization
@@ -213,14 +214,14 @@ int main() {
     float gx;
     float gy; 
     float gz; 
-    float abs_gx;
-    float abs_gy;
-    float abs_gz;
     float linear_velocity;
     float distance;
-    float max_value;
-    float prev_max_value;
-    float maxX, maxY, maxZ;
+    float time;
+    float varX;
+    float varY;
+    float varZ;
+    int i;
+    
     // char buffer[32]; // Buffer for string conversion
 
     while (1) {
@@ -243,38 +244,28 @@ int main() {
         if (sampleTimer.read_ms() >= SAMPLE_INTERVAL_MS) {
             // Reset the timer
             sampleTimer.reset();
-            abs_gx = std::abs(gx);
-            abs_gy = std::abs(gy);
-            abs_gz = std::abs(gz);
+            if (DEBUG){
+                printf(">gx: %4.2f |g\n", gx);
+                printf(">gy: %4.2f |g\n", gy);
+                printf(">gz: %4.2f |g\n", gz);
+            }
             
-            addDataToBuffer(abs_gx, abs_gy, abs_gz);
-            getMaxValuesFromBuffer(maxX, maxY, maxZ);
-            bool shouldSwitchAxis = false;
-            if (axis == X && maxY - maxX > MAX_CHANGE_TOLERANCE) {
-                shouldSwitchAxis = true;
-                axis = Y;
-            } else if (axis == Y && maxZ - maxY > MAX_CHANGE_TOLERANCE) {
-                shouldSwitchAxis = true;
-                axis = Z;
-            } else if (axis == Z && maxX - maxZ > MAX_CHANGE_TOLERANCE) {
-                shouldSwitchAxis = true;
-                axis = X;
-            }
-            if (shouldSwitchAxis) {
-                // Logic to handle axis switching
-                // For example, resetting distance and displaying a message
-                distance = 0;
-                bufferIndex = 0;
-                printf("Axis %c, resetting...", (axis == X ? 'X' : (axis == Y ? 'Y' : 'Z')));
-                snprintf(lineBuffer, sizeof(lineBuffer), "Axis %c, resetting...", (axis == X ? 'X' : (axis == Y ? 'Y' : 'Z')));
-                lcd.Clear(LCD_COLOR_WHITE);
-                lcd.DisplayStringAt(0, LINE(4), (uint8_t *)lineBuffer, CENTER_MODE);
-                thread_sleep_for(2000);
-            }
-            linear_velocity = getVelocity(axis);
-            // printf("linear velocity: %4.2f|g\n", linear_velocity);
-            distance += getDistance(linear_velocity);
-            // printf("distance: %4.2f|g\n", distance);
+            
+            addDataToBuffer(std::abs(gx), std::abs(gy), std::abs(gz));
+
+            // Calculate variance for each axis
+            varX = calculateVariance(X);
+            varY = calculateVariance(Y);
+            varZ = calculateVariance(Z);
+
+            // Determine the axis with the highest variance
+            axis = (varX > varY && varX > varZ) ? X : 
+                        (varY > varZ) ? Y : Z;
+
+            linear_velocity = getVelocity(axis, height);
+            // distance += getDistance(linear_velocity);
+            distance = calculateTotalDistance(axis, height);
+            printf("distance: %f\n", distance);
 
             // Clear the LCD screen before displaying new data
             lcd.Clear(LCD_COLOR_WHITE);
@@ -303,14 +294,23 @@ int main() {
             lcd.DisplayStringAt(0, LINE(9), (uint8_t *)lineBuffer, CENTER_MODE);
 
             // Convert distance to string and display
-            snprintf(lineBuffer, sizeof(lineBuffer), "time: %2.2fs", 0.5*bufferIndex);
+            time = (SAMPLE_INTERVAL_MS * bufferIndex) / 1000.0f;
+            snprintf(lineBuffer, sizeof(lineBuffer), "time: %2.2fs", time);
             lcd.DisplayStringAt(0, LINE(10), (uint8_t *)lineBuffer, CENTER_MODE);
-
-
+            if (time - 0.0f <= 0.0001){
+                if (DEBUG){
+                    printf("reset\n");
+                }
+                
+                distance = 0;
+                bufferIndex = 0;
+                for (i = 0; i < SAMPLE_COUNT; ++i) {
+                    gyroBuffer[i].gx = 0.0f;
+                    gyroBuffer[i].gy = 0.0f;
+                    gyroBuffer[i].gz = 0.0f;
+                }
+            }
         }
-
-        
-
         thread_sleep_for(100);
     }
 }
