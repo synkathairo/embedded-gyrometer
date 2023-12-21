@@ -36,6 +36,13 @@
 
 LCD_DISCO_F429ZI lcd;  // Instantiate LCD object
 
+InterruptIn button(PA_0); // Blue button
+Timer pressTimer;          // Timer to measure press duration
+
+volatile bool buttonPressed = false;
+volatile int pressDuration = 0;
+int height = 100;
+
 // Structure to hold gyro data
 struct GyroData {
     float gx, gy, gz;
@@ -116,8 +123,51 @@ void getMaxValuesFromBuffer(float &maxX, float &maxY, float &maxZ) {
     }
 }
 
+void onPress() {
+    buttonPressed = true;
+    pressTimer.reset();
+    pressTimer.start();
+}
+
+void onRelease() {
+    buttonPressed = false;
+    pressTimer.stop();
+    pressDuration = pressTimer.read_ms();
+}
+
+void updateDisplay(int height) {
+    char buffer[64];
+    snprintf(buffer, sizeof(buffer), "input height: %d cm", height);
+    // lcd.Clear(LCD_COLOR_WHITE);
+    lcd.DisplayStringAt(0, LINE(1), (uint8_t *)buffer, CENTER_MODE);
+}
+
 int main() {
     lcd.Clear(LCD_COLOR_WHITE);
+
+    button.fall(&onPress);
+    button.rise(&onRelease);
+    pressTimer.start();
+    updateDisplay(height);
+
+    while (true) {
+        if (!buttonPressed && pressDuration > 0) {
+            if (pressDuration < 500) {
+                height += 5;
+            } else if (pressDuration >= 500 && pressDuration < 1000) {
+                height += 10;
+            } else {
+                break;  // Exit the loop if press duration is 2000 ms or more
+            }
+            pressDuration = 0;
+            updateDisplay(height);
+            
+        }
+        
+
+        ThisThread::sleep_for(100ms);
+    }
+
     //spi initialization
     SPI spi(PF_9, PF_8, PF_7, PC_1, use_gpio_ssel);
     uint8_t write_buf[32], read_buf[32];
@@ -175,7 +225,7 @@ int main() {
 
     while (1) {
         
-        char lineBuffer[64]; // Increased buffer size for floating-point numbers
+        char lineBuffer[128]; // Increased buffer size for floating-point numbers
         flags.wait_all(DATA_READY_FLAG);
         write_buf[0] = OUT_X_L | 0x80 | 0x40;
 
@@ -215,8 +265,8 @@ int main() {
                 // For example, resetting distance and displaying a message
                 distance = 0;
                 bufferIndex = 0;
-                printf("Switched to axis %c, resetting distance\n", (axis == X ? 'X' : (axis == Y ? 'Y' : 'Z')));
-                snprintf(lineBuffer, sizeof(lineBuffer), "Switched to axis %c, resetting distance", (axis == X ? 'X' : (axis == Y ? 'Y' : 'Z')));
+                printf("Axis %c, resetting...", (axis == X ? 'X' : (axis == Y ? 'Y' : 'Z')));
+                snprintf(lineBuffer, sizeof(lineBuffer), "Axis %c, resetting...", (axis == X ? 'X' : (axis == Y ? 'Y' : 'Z')));
                 lcd.Clear(LCD_COLOR_WHITE);
                 lcd.DisplayStringAt(0, LINE(4), (uint8_t *)lineBuffer, CENTER_MODE);
                 thread_sleep_for(2000);
@@ -229,28 +279,31 @@ int main() {
             // Clear the LCD screen before displaying new data
             lcd.Clear(LCD_COLOR_WHITE);
 
+            snprintf(lineBuffer, sizeof(lineBuffer), "height: %d cm", height);
+            lcd.DisplayStringAt(0, LINE(4), (uint8_t *)lineBuffer, CENTER_MODE);
+
             // Convert gx to string and display
-            snprintf(lineBuffer, sizeof(lineBuffer), "gx: %2.2f", gx);
+            snprintf(lineBuffer, sizeof(lineBuffer), "gx: %2.2f rad/s", gx);
             lcd.DisplayStringAt(0, LINE(5), (uint8_t *)lineBuffer, CENTER_MODE);
 
             // Convert gy to string and display
-            snprintf(lineBuffer, sizeof(lineBuffer), "gy: %2.2f", gy);
+            snprintf(lineBuffer, sizeof(lineBuffer), "gy: %2.2f rad/s", gy);
             lcd.DisplayStringAt(0, LINE(6), (uint8_t *)lineBuffer, CENTER_MODE);
 
             // Convert gz to string and display
-            snprintf(lineBuffer, sizeof(lineBuffer), "gz: %2.2f", gz);
+            snprintf(lineBuffer, sizeof(lineBuffer), "gz: %2.2f rad/s", gz);
             lcd.DisplayStringAt(0, LINE(7), (uint8_t *)lineBuffer, CENTER_MODE);
 
             // Convert linear velocity to string and display
-            snprintf(lineBuffer, sizeof(lineBuffer), "linear velocity: %2.2f", linear_velocity);
+            snprintf(lineBuffer, sizeof(lineBuffer), "velocity: %2.2f m/s", linear_velocity);
             lcd.DisplayStringAt(0, LINE(8), (uint8_t *)lineBuffer, CENTER_MODE);
 
             // Convert distance to string and display
-            snprintf(lineBuffer, sizeof(lineBuffer), "distance: %2.2f", distance);
+            snprintf(lineBuffer, sizeof(lineBuffer), "distance: %2.2f m", distance);
             lcd.DisplayStringAt(0, LINE(9), (uint8_t *)lineBuffer, CENTER_MODE);
 
             // Convert distance to string and display
-            snprintf(lineBuffer, sizeof(lineBuffer), "time: %2.2f", 0.5*bufferIndex);
+            snprintf(lineBuffer, sizeof(lineBuffer), "time: %2.2fs", 0.5*bufferIndex);
             lcd.DisplayStringAt(0, LINE(10), (uint8_t *)lineBuffer, CENTER_MODE);
 
 
