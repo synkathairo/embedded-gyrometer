@@ -5,10 +5,10 @@
 // Define Regs & Configurations --> Gyroscope's settings
 #define CTRL_REG1 0x20
 #define CTRL_REG1_CONFIG 0b01'10'1'1'1'1
-#define CTRL_REG4 0x23 // Second configure to set the DPS // page 33
+#define CTRL_REG4 0x23  // Second configure to set the DPS // page 33
 #define CTRL_REG4_CONFIG 0b0'0'01'0'00'0
 
-#define CTRL_REG3 0x22 // page 32
+#define CTRL_REG3 0x22  // page 32
 #define CTRL_REG3_CONFIG 0b0'0'0'0'1'000
 
 #define OUT_X_L 0x28
@@ -18,22 +18,22 @@
 
 #define SCALING_FACTOR (17.5f * 0.017453292519943295769236907684886f / 1000.0f)
 
-#define FILTER_COEFFICIENT 0.1f // Adjust this value as needed
+#define FILTER_COEFFICIENT 0.1f  // Adjust this value as needed
 
-#define SAMPLE_INTERVAL_MS 500 // 0.5 seconds in milliseconds
-#define SAMPLE_COUNT 40        // Number of samples to store
+#define SAMPLE_INTERVAL_MS 500  // 0.5 seconds in milliseconds
+#define SAMPLE_COUNT 40         // Number of samples to store
 
 #define X 0
 #define Y 1
 #define Z 2
 
-#define DEBUG                                                                  \
-  0 // Set to 1 to enable debug messages in serrial monitor and to use teleplot
+#define DEBUG \
+  0  // Set to 1 to enable debug messages in serrial monitor and to use teleplot
 
-LCD_DISCO_F429ZI lcd; // Instantiate LCD object
+LCD_DISCO_F429ZI lcd;  // Instantiate LCD object
 
-InterruptIn button(PA_0); // Blue button
-Timer pressTimer;         // Timer to measure press duration
+InterruptIn button(PA_0);  // Blue button
+Timer pressTimer;          // Timer to measure press duration
 
 volatile bool buttonPressed = false;
 volatile int pressDuration = 0;
@@ -74,7 +74,7 @@ float getVelocity(const uint8_t axis, float height) {
   }
   float legLength =
       (height * 0.45f) /
-      100; // Assume leg length is 45% of height and convert to meters
+      100;  // Assume leg length is 45% of height and convert to meters
   float prevValue = (axis == X) ? gyroBuffer[bufferIndex - 1].gx
                                 : (axis == Y) ? gyroBuffer[bufferIndex - 1].gy
                                               : gyroBuffer[bufferIndex - 1].gz;
@@ -129,7 +129,7 @@ float calculateTotalDistance(const uint8_t axis, float height) {
   float totalDistance = 0.0f;
   float legLength =
       (height * 0.45f) /
-      100; // Assume leg length is 45% of height and convert to meters
+      100;  // Assume leg length is 45% of height and convert to meters
   float totalAvgVelocity = 0.0f;
   for (int i = 1; i < bufferIndex; ++i) {
     float prevValue =
@@ -176,7 +176,7 @@ int main() {
       } else if (pressDuration >= 500 && pressDuration < 1000) {
         height += 10;
       } else {
-        break; // Exit the loop if press duration is 2000 ms or more
+        break;  // Exit the loop if press duration is 2000 ms or more
       }
       pressDuration = 0;
       updateDisplay(height);
@@ -240,7 +240,7 @@ int main() {
   // char buffer[32]; // Buffer for string conversion
 
   while (1) {
-    char lineBuffer[128]; // Increased buffer size for floating-point numbers
+    char lineBuffer[128];  // Increased buffer size for floating-point numbers
     flags.wait_all(DATA_READY_FLAG);
     write_buf[0] = OUT_X_L | 0x80 | 0x40;
 
