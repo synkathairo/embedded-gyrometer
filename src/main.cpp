@@ -18,7 +18,7 @@
 
 #define SCALING_FACTOR (17.5f * 0.017453292519943295769236907684886f / 1000.0f)
 
-#define FILTER_COEFFICIENT 0.1f  // Adjust this value as needed
+#define FILTER_COEFFICIENT 0.1f
 
 #define SAMPLE_INTERVAL_MS 500  // 0.5 seconds in milliseconds
 #define SAMPLE_COUNT 40         // Number of samples to store
@@ -229,6 +229,9 @@ int main() {
   float gx;
   float gy;
   float gz;
+  float filtered_gx;
+  float filtered_gy;
+  float filtered_gz;
   float linear_velocity;
   float distance;
   float time;
@@ -255,13 +258,20 @@ int main() {
     gx = ((float)raw_gx) * SCALING_FACTOR;
     gy = ((float)raw_gy) * SCALING_FACTOR;
     gz = ((float)raw_gz) * SCALING_FACTOR;
+
     if (sampleTimer.read_ms() >= SAMPLE_INTERVAL_MS) {
+      filtered_gx =
+          FILTER_COEFFICIENT * gx + (1 - FILTER_COEFFICIENT) * filtered_gx;
+      filtered_gy =
+          FILTER_COEFFICIENT * gy + (1 - FILTER_COEFFICIENT) * filtered_gy;
+      filtered_gz =
+          FILTER_COEFFICIENT * gz + (1 - FILTER_COEFFICIENT) * filtered_gz;
       // Reset the timer
       sampleTimer.reset();
       if (DEBUG) {
-        printf(">gx: %4.2f |g\n", gx);
-        printf(">gy: %4.2f |g\n", gy);
-        printf(">gz: %4.2f |g\n", gz);
+        printf(">gx: %4.2f |g\n", filtered_gx);
+        printf(">gy: %4.2f |g\n", filtered_gy);
+        printf(">gz: %4.2f |g\n", filtered_gz);
       }
 
       addDataToBuffer(std::abs(gx), std::abs(gy), std::abs(gz));
