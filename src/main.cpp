@@ -173,7 +173,7 @@ int main() {
     if (!buttonPressed && pressDuration > 0) {
       if (pressDuration < 500) {
         height += 1;
-      } else if (pressDuration >= 500 && pressDuration < 1000) {
+      } else if (pressDuration >= 500 && pressDuration < 2000) {
         height += 10;
       } else {
         break;  // Exit the loop if press duration is 2000 ms or more
