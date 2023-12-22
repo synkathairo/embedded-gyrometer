@@ -27,8 +27,10 @@
 #define Y 1
 #define Z 2
 
-#define DEBUG \
-  0  // Set to 1 to enable debug messages in serrial monitor and to use teleplot
+// Set to 1 to enable debug messages in serrial monitor and to use teleplot
+#define DEBUG 0
+
+#define DISTANCE_TOLERANCE 0.02f
 
 LCD_DISCO_F429ZI lcd;  // Instantiate LCD object
 
@@ -149,6 +151,10 @@ float calculateTotalDistance(const uint8_t axis, float height) {
   // d = (total v / bufferIndex) * (SAMPLE_INTERVAL_MS * bufferIndex / 1000)
   // d = (total v * SAMPLE_INTERVAL_MS) / 1000
   totalDistance = (totalAvgVelocity * SAMPLE_INTERVAL_MS) / 1000;
+  // ignore noise
+  if (totalDistance <= DISTANCE_TOLERANCE) {
+    totalDistance = 0.0f;
+  }
   return std::abs(totalDistance);
 }
 
