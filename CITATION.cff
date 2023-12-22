@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Gupta"
+  given-names: "Shubham"
+  orcid: "https://orcid.org/0009-0002-6966-588X"
+- family-names: "Zhu"
+  given-names: "Charles"
+- family-names: "Gupta"
+  given-names: "Sarthak"
+title: "📟 Embedded-Gyrometer"
+date-released: 2023-22-13
+url: "https://github.com/synkathairo/embedded-gyrometer"
