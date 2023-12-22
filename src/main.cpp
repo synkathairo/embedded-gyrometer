@@ -274,7 +274,7 @@ int main() {
         printf(">gz: %4.2f |g\n", filtered_gz);
       }
 
-      addDataToBuffer(std::abs(gx), std::abs(gy), std::abs(gz));
+      addDataToBuffer(std::abs(filtered_gx), std::abs(filtered_gy), std::abs(filtered_gz));
 
       // Calculate variance for each axis
       varX = calculateVariance(X);
