@@ -64,5 +64,9 @@ The project uses components from the recitation lectures of Real Time Embedded S
 ## Citation
 If you find this work useful, please cite us using (bibtex):
 ```
-Coming Soon!
+@software{Gupta_Embedded-Gyrometer,
+author = {Gupta, Shubham and Zhu, Charles and Gupta, Sarthak},
+title = {{📟 Embedded-Gyrometer}},
+url = {https://github.com/synkathairo/embedded-gyrometer}
+}
 ```
