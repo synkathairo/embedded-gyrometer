@@ -274,7 +274,8 @@ int main() {
         printf(">gz: %4.2f |g\n", filtered_gz);
       }
 
-      addDataToBuffer(std::abs(filtered_gx), std::abs(filtered_gy), std::abs(filtered_gz));
+      addDataToBuffer(std::abs(filtered_gx), std::abs(filtered_gy),
+                      std::abs(filtered_gz));
 
       // Calculate variance for each axis
       varX = calculateVariance(X);
@@ -299,15 +300,15 @@ int main() {
       lcd.DisplayStringAt(0, LINE(4), (uint8_t *)lineBuffer, CENTER_MODE);
 
       // Convert gx to string and display
-      snprintf(lineBuffer, sizeof(lineBuffer), "gx: %2.2f rad/s", gx);
+      snprintf(lineBuffer, sizeof(lineBuffer), "gx: %2.2f rad/s", filtered_gx);
       lcd.DisplayStringAt(0, LINE(5), (uint8_t *)lineBuffer, CENTER_MODE);
 
       // Convert gy to string and display
-      snprintf(lineBuffer, sizeof(lineBuffer), "gy: %2.2f rad/s", gy);
+      snprintf(lineBuffer, sizeof(lineBuffer), "gy: %2.2f rad/s", filtered_gy);
       lcd.DisplayStringAt(0, LINE(6), (uint8_t *)lineBuffer, CENTER_MODE);
 
       // Convert gz to string and display
-      snprintf(lineBuffer, sizeof(lineBuffer), "gz: %2.2f rad/s", gz);
+      snprintf(lineBuffer, sizeof(lineBuffer), "gz: %2.2f rad/s", filtered_gz);
       lcd.DisplayStringAt(0, LINE(7), (uint8_t *)lineBuffer, CENTER_MODE);
 
       // Convert linear velocity to string and display
