@@ -2,7 +2,7 @@
 
   <h1 align="center">📟 Embedded-Gyrometer</h1>
 
-  <h4 align="center"><a href="https://github.com/iamshubhamgupto">Shubham Gupta</a>, <a href="https://synkathairo.github.io">Charles Zhu</a>, <a href="https://github.com/sartak99">Sarthak Gupta</a>,</h4>
+  <h4 align="center"><a href="https://github.com/iamshubhamgupto">Shubham Gupta</a>, <a href="https://synkathairo.github.io">Charles Zhu</a>, <a href="https://github.com/sartak99">Sarthak Gupta</a></h4>
 
   <h5 align="center">&emsp; <a href="https://synkathairo.github.io/embedded-gyrometer/assets/pdf/Embedded_Gyrometer.pdf"> Report</a> | <a href="https://synkathairo.github.io/embedded-gyrometer/">Project Page</a></h5>
 
