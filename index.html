@@ -133,7 +133,7 @@
                 Abstract
             </h3>
             <p class="text-justify">
-                Given a maze without a predefined map, our objective is to navigate to a target location using only visual information. The maze is presented to us in the form of game with two modes: Exploration and Navigation. We use a dead-reckoning approach to estimate the global position of the robot during the Exploration page. We then use a visual bag of words approach to recognize the target location trained using FAISS. We then use A* algorithm to generate a path to the target. The map is presented to the user which is then used to navigate to the target.
+                The core objective of our project was to design and construct a wearable speedometer, capitalizing on the capabilities of the STM32F429 Discovery Board's built-in gyroscope (L3GD20). This innovative approach required us to capture angular velocities and accurately convert them into linear forward velocity, subsequently computing the distance traveled. Such a device holds considerable promise in offering a compact and efficient solution for speed and distance measurement, particularly in fitness and health monitoring contexts. The solution we present requires no calibration step and is axis independent. We are able to estimate the velocity and distance travelled.
             </p>
             <br>
         </div>
@@ -149,14 +149,31 @@
             <h3>
                 Methodology
             </h3>
-            <!-- <image src="assets/img/vis_nav_final.png" style="width:100%;" class="img-responsive center-block" alt="exploration-img">
-                <p class="text-justify">
-                    Overview of the system architecture of our solution. The current frame, pose and graph data is published by player.py using <b>Redis</b> which is used by processes running in parallel to update the position of the robot in game in <b>real-time</b> using plotter.py. We visualize the orientation of the robot using arrow.py
+            <image src="assets/img/method.png" style="width:100%;" class="img-responsive center-block" alt="exploration-img">
+                <p class="text-center">
+                    Overview of the system architecture of our solution. 
                 </p><br>
             <p class="paragraph">
-                We manually explore the maze using visual inspection and manual control. We use the distance travelled and the amount rotated (rotation limited to 90 degree turns) to create a dead-reckoning approach to calculate the global position of the robot. Index matching each image with each pose, we can create a geotagged list of pictures that we can later interpret for the navigation
-            </p> -->
-            <strong class="link-labels-text">&lt;Coming Soon!&gt;</strong>
+                Distance traveled by the user is dependent on their physical strides. We can approximate this by taking in the height of the user as input in centimeters. The STM32F429 Discovery Board is interfaced with the built-in gyroscope (L3GD20) using the SPI (Serial Peripheral Interface) communication protocol. This involves setting up the SPI with the appropriate configurations (CTRL_REG1, CTRL_REG4, CTRL_REG3) to accurately capture the gyro data. Angular velocities are sampled every 0.5 seconds (SAMPLE_INTERVAL_MS) to get the raw data from the gyroscope in degrees per second. Subsequently, the scaling  factor (SCALING_FACTOR) is applied to convert it into more meaningful unit for further calculations i.e., radians per second. Following the conversion, the data is passed through a low pass filter to remove the high-frequency noise.
+            </p> 
+            <p class="paragraph">
+                In determining the direction of angular velocity along the user's movement, the approach involves selecting the axis with the largest variance among the three. This ensures the effectiveness of the solution irrespective of the board's alignment. The magnitude of linear velocity is calculated by using the absolute values of angular velocity along the axis of movement and the user's leg length as the radius of rotation. An assumption has been made that the leg length is approximately 45% of a person's height. 
+            </p> 
+            \[
+                v = \omega \cdot radius
+            \]
+            <p class="paragraph">
+                The calculation of the distance traveled involves integrating the linear velocity throughout the sampling period. This is accomplished by summing the average linear velocities over the 20-second data recording period and then multiplying by the sample interval.
+            </p>
+            <!-- Equation 1 -->
+            \[
+            v = \frac{d}{t}
+            \]
+
+            <!-- Equation 2 -->
+            \[
+            d = v \cdot t
+            \]
         </div>
 
         <div class="row">
