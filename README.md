@@ -4,7 +4,7 @@
 
   <h4 align="center"><a href="https://github.com/iamshubhamgupto">Shubham Gupta</a>, <a href="https://synkathairo.github.io">Charles Zhu</a>, <a href="https://github.com/sartak99">Sarthak Gupta</a></h4>
 
-  <h5 align="center">&emsp; <a href="https://synkathairo.github.io/embedded-gyrometer/assets/pdf/Embedded_Gyrometer.pdf"> Report</a> | <a href="https://synkathairo.github.io/embedded-gyrometer/">Project Page</a></h5>
+  <h5 align="center">&emsp; <a href="https://synkathairo.github.io/embedded-gyrometer/assets/pdf/Embedded_Gyrometer.pdf"> Report</a> | <a href="https://synkathairo.github.io/embedded-gyrometer/">Project Page</a> | <a href="https://youtu.be/_Dfwzl4sW6A?si=0gQgY525_ysnLzf0">Youtube</a></h5>
 
   <!-- Images container -->
   <div style="align-items: center;">
